@@ -149,7 +149,12 @@ def _main(args):
     run(args)
 
 
-@hydra.main(config_path="conf/conf.yaml")
+#@hydra.main(config_path="conf/conf.yaml")
+@hydra.main(
+    version_base=None,
+    config_path="conf",
+    config_name="conf"
+)
 def main(args):
     try:
         _main(args)
