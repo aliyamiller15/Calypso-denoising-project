@@ -1,0 +1,13 @@
+
+dset:
+  path_music_train: [ "C:/Users/Aliya/Downloads/denoising-historical-recordings/Re-training/Clean Audios"]
+  path_music_validation: ["C:/Users/Aliya/Downloads/denoising-historical-recordings/Re-training/Validation"]
+  path_music_test: []
+
+  path_piano_test: []
+  path_strings_test: []
+  path_orchestra_test: []
+  path_opera_test: []
+
+  path_noise: "C:/Users/Aliya/Downloads/denoising-historical-recordings/Re-training/Gramophone_Record_Noise_Dataset" #path with noise samples. There must be an info.csv file there
+  path_recordings: "/scratch/work/molinee2/datasets/real_noisy_data_test" #path with real noisy recordings. There must be an audio_files.txt file there
