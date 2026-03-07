@@ -128,16 +128,16 @@ def run(args):
             tf.summary.scalar('epoch_loss', trainer.val_loss.result(), step=epoch)
             tf.summary.scalar('epoch_mean_absolute_error', trainer.val_mae.result(), step=epoch)
 
-        trainer.train_mae.reset_states()
-        trainer.val_loss.reset_states()
-        trainer.val_mae.reset_states()
+        trainer.train_mae.reset_state()
+        trainer.val_loss.reset_state()
+        trainer.val_mae.reset_state()
          
         if (epoch+1) % 50 == 0:
             if args.variable_lr:
                 current_lr*=1e-1
                 trainer.optimizer.lr=current_lr
             try: 
-                unet_model.save_weights(checkpoint_filpath)
+                unet_model.save_weights(checkpoint_filepath)
             except:
                 pass
 
