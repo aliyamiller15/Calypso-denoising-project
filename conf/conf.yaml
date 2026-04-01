@@ -5,7 +5,7 @@ path_experiment: "experiments/trained_model" #there should be a better way to do
 tensorboard_logs: "/scratch/work/molinee2/tensorboard_logs/unet_historical" #path with tensorboard
 # Dataset related
 fs: 44100  #default is 44100, better NEVER change
-seg_len_s_train: 5 #length of the train (and val) segments in seconds
+seg_len_s_train: 3 #length of the train (and val) segments in seconds
 freq_inference: 10 #we do inference after * epochs
 seg_len_s_test: 15 #lenum_test_segments: 10 #number of test segments (inferenced every epoch)
 num_real_test_segments: 5 #number of real recordings inferenced every epoch
@@ -42,9 +42,9 @@ beta2: 0.9 #used
 loss: "mae"  #choose loss: 
 
 epochs: 73
-batch_size: 16
+batch_size: 2
 val_take: -1
-steps_per_epoch: 1000
+steps_per_epoch: 500
 
 
 sp:
