@@ -1,6 +1,7 @@
 import os
 import hydra
 import logging
+import glob
 
 logger = logging.getLogger(__name__)
 
@@ -73,6 +74,8 @@ def run(args):
     with strategy.scope():
         #build the model
         unet_model = unet.build_model_denoise(unet_args=args.unet)
+        dummy_input = tf.zeros((1, 64, 1025, 2))
+        unet_model(dummy_input)
 
         current_lr=args.lr
         optimizer = Adam(learning_rate=current_lr, beta_1=args.beta1, beta_2=args.beta2)
@@ -84,8 +87,10 @@ def run(args):
         train_summary_writer = tf.summary.create_file_writer(log_dir+"/train")
         val_summary_writer = tf.summary.create_file_writer(log_dir+"/validation")
     
-    #path where the checkpoints will be saved
-    checkpoint_filepath=os.path.join(path_experiment, 'checkpoint')
+    #Save checkpoints to Google Drive
+    checkpoint_dir= "/content/drive/MyDrive/unet_checkpoints"
+    if not os.path.exists(checkpoint_dir):
+      os.makedirs(checkpoint_dir, exist_ok=True)
     
     dataset_train=dataset_train.batch(batch_size)
     dataset_val=dataset_val.batch(batch_size)
@@ -103,7 +108,29 @@ def run(args):
 
     trainer=Trainer(unet_model,optimizer,loss,strategy, path_experiment,  args)
 
-    for epoch in range(epochs):
+
+    start_epoch = 0
+
+    # Look for existing checkpoints
+    checkpoint_files = glob.glob(os.path.join(checkpoint_dir, "unet_epoch_*.weights.h5"))
+
+    if checkpoint_files:
+        checkpoint_files.sort(key=lambda x: int(x.split("_")[-1].split(".")[0]))
+        latest_checkpoint = checkpoint_files[-1]
+
+        print("Found checkpoint:", latest_checkpoint)
+
+        # Extract epoch number
+        start_epoch = int(latest_checkpoint.split("_")[-1].split(".")[0])
+
+        print("Resuming from epoch:", start_epoch)
+
+        # Load model weights
+        unet_model.load_weights(latest_checkpoint)
+    else:
+        print("No checkpoint found. Starting training from scratch.")
+
+    for epoch in range(start_epoch, epochs):
         total_loss=0
         step_loss=0
         for step in tqdm(range(args.steps_per_epoch), desc="Training epoch "+str(epoch)):
@@ -120,6 +147,18 @@ def run(args):
 
         template = ("Epoch {}, Loss: {}, train_MAE: {}, val_Loss: {}, val_MAE: {}")
         print (template.format(epoch+1, train_loss, trainer.train_mae.result(), trainer.val_loss.result(), trainer.val_mae.result()))
+        print("Saving FULL model to Google Drive...")
+
+        full_model_path = os.path.join(checkpoint_dir, "FULL_MODEL.h5")
+
+        try:
+            unet_model.save(full_model_path)
+            print(f" FULL model saved successfully: {full_model_path}")
+        except Exception as e:
+            print("Model saving failed:", e)
+            
+            
+      
 
         with train_summary_writer.as_default():
             tf.summary.scalar('epoch_loss', train_loss, step=epoch)
@@ -131,15 +170,18 @@ def run(args):
         trainer.train_mae.reset_state()
         trainer.val_loss.reset_state()
         trainer.val_mae.reset_state()
-         
+
+        
+        # Remove old checkpoints to save space
+        checkpoints = sorted(glob.glob(os.path.join(checkpoint_dir, "unet_epoch_*.weights.h5")))
+        if len(checkpoints) > 10:
+            os.remove(checkpoints[0])
+
+        # learning rate change
         if (epoch+1) % 50 == 0:
             if args.variable_lr:
-                current_lr*=1e-1
-                trainer.optimizer.lr=current_lr
-            try: 
-                unet_model.save_weights(checkpoint_filepath)
-            except:
-                pass
+                current_lr *= 1e-1
+                trainer.optimizer.lr = current_lr
 
 def _main(args):
     global __file__
